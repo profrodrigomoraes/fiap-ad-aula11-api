@@ -4,17 +4,56 @@ import { sql, garantirTabela, resetarBase } from './db.js';
 
 const app = express();
 
+// Quantos alunos a tabela aceita e quantas escritas (POST/PUT/PATCH/DELETE) por minuto cada IP pode fazer
+const MAX_ALUNOS = Number(process.env.MAX_ALUNOS) || 500;
+const LIMITE_ESCRITAS = Number(process.env.LIMITE_ESCRITAS_POR_MINUTO) || 60;
+
+app.disable('x-powered-by');
+// Na Vercel o IP real do visitante vem no header x-forwarded-for
+if (process.env.VERCEL) app.set('trust proxy', true);
+
 // Libera o acesso de qualquer site (necessário para usar fetch() de uma página HTML)
 app.use(cors());
-// Lê o corpo das requisições enviadas como JSON
-app.use(express.json());
-// Página de documentação (na Vercel a pasta public/ é servida automaticamente)
-app.use(express.static('public'));
+// Lê o corpo das requisições enviadas como JSON (no máximo 10 KB)
+app.use(express.json({ limit: '10kb' }));
+// Documentação e exemplos (na Vercel a pasta public/ é servida automaticamente)
+app.use(express.static('public', { extensions: ['html'] }));
+
+app.get('/', (req, res) => res.redirect('/docs'));
+app.get('/exemplos', (req, res) => res.redirect('/exemplos/get'));
 
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.originalUrl}`);
   next();
 });
+
+// ---------------------------------------------------------------------------
+// Limite de requisições: cada IP pode fazer LIMITE_ESCRITAS escritas por minuto.
+// Fica na memória de cada instância do servidor, então é uma proteção básica.
+// ---------------------------------------------------------------------------
+
+const contadores = new Map();
+
+function limitarEscritas(req, res, next) {
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
+
+  const agora = Date.now();
+  if (contadores.size > 10_000) contadores.clear();
+
+  let contador = contadores.get(req.ip);
+  if (!contador || agora - contador.inicio > 60_000) {
+    contador = { inicio: agora, total: 0 };
+    contadores.set(req.ip, contador);
+  }
+  contador.total++;
+
+  if (contador.total > LIMITE_ESCRITAS) {
+    const espera = Math.ceil((contador.inicio + 60_000 - agora) / 1000);
+    res.set('Retry-After', String(espera));
+    return res.status(429).json({ erro: `Muitas requisições. Aguarde ${espera} segundo(s) e tente de novo.` });
+  }
+  next();
+}
 
 // ---------------------------------------------------------------------------
 // Validação
@@ -69,6 +108,13 @@ function validarAluno(body, { parcial = false } = {}) {
     }
   }
 
+  // Bloqueia tags HTML (ex: <script>) para ninguém injetar código nas páginas dos colegas
+  for (const campo of ['nome', 'email', 'curso']) {
+    if (typeof body[campo] === 'string' && /[<>]/.test(body[campo])) {
+      erros.push(`"${campo}" não pode conter os caracteres < ou >.`);
+    }
+  }
+
   if (parcial && erros.length === 0 && Object.keys(body).length === 0) {
     erros.push(`Envie ao menos um campo para atualizar: ${CAMPOS.join(', ')}.`);
   }
@@ -100,6 +146,24 @@ function lerId(req, res) {
 function naoEncontrado(res, id) {
   return res.status(404).json({ erro: `Aluno com id ${id} não encontrado.` });
 }
+
+// Responde 404 ou 403 e devolve true se o aluno não puder ser alterado
+async function bloqueado(res, id) {
+  const [aluno] = await sql`SELECT protegido FROM alunos WHERE id = ${id}`;
+  if (!aluno) {
+    naoEncontrado(res, id);
+    return true;
+  }
+  if (aluno.protegido) {
+    res.status(403).json({
+      erro: `O aluno ${id} é um exemplo protegido e não pode ser alterado nem excluído. Crie o seu com POST /alunos e use o id dele.`,
+    });
+    return true;
+  }
+  return false;
+}
+
+app.use(['/alunos', '/reset'], limitarEscritas);
 
 // Garante que a tabela existe antes de qualquer rota de /alunos
 app.use(['/alunos', '/reset'], async (req, res, next) => {
@@ -141,6 +205,11 @@ app.post('/alunos', async (req, res) => {
   const erros = validarAluno(req.body);
   if (erros.length) return res.status(400).json({ erro: 'Dados inválidos.', detalhes: erros });
 
+  const [{ total }] = await sql`SELECT count(*)::int AS total FROM alunos`;
+  if (total >= MAX_ALUNOS) {
+    return res.status(403).json({ erro: `Limite de ${MAX_ALUNOS} alunos atingido. Exclua alguns antes de cadastrar novos.` });
+  }
+
   const { nome, email, curso = null, idade = null } = limpar(req.body);
   const [aluno] = await sql`
     INSERT INTO alunos (nome, email, curso, idade)
@@ -157,6 +226,7 @@ app.put('/alunos/:id', async (req, res) => {
 
   const erros = validarAluno(req.body);
   if (erros.length) return res.status(400).json({ erro: 'Dados inválidos.', detalhes: erros });
+  if (await bloqueado(res, id)) return;
 
   const { nome, email, curso = null, idade = null } = limpar(req.body);
   const [aluno] = await sql`
@@ -176,6 +246,7 @@ app.patch('/alunos/:id', async (req, res) => {
 
   const erros = validarAluno(req.body, { parcial: true });
   if (erros.length) return res.status(400).json({ erro: 'Dados inválidos.', detalhes: erros });
+  if (await bloqueado(res, id)) return;
 
   const dados = limpar(req.body);
   const campos = Object.keys(dados);
@@ -193,6 +264,7 @@ app.patch('/alunos/:id', async (req, res) => {
 app.delete('/alunos/:id', async (req, res) => {
   const id = lerId(req, res);
   if (id === null) return;
+  if (await bloqueado(res, id)) return;
 
   const [aluno] = await sql`DELETE FROM alunos WHERE id = ${id} RETURNING *`;
   if (!aluno) return naoEncontrado(res, id);
@@ -227,11 +299,14 @@ app.all('/alunos/:id', (req, res) => {
 
 // Rota inexistente
 app.use((req, res) => {
-  res.status(404).json({ erro: `Rota ${req.method} ${req.path} não existe. Veja a documentação em /` });
+  res.status(404).json({ erro: `Rota ${req.method} ${req.path} não existe. Veja a documentação em /docs` });
 });
 
 // Tratamento de erros
 app.use((err, req, res, next) => {
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({ erro: 'Corpo da requisição muito grande (máximo 10 KB).' });
+  }
   if (err.type === 'entity.parse.failed') {
     return res.status(400).json({
       erro: 'JSON mal formatado. Confira aspas duplas nas chaves e textos, vírgulas e chaves { }.',
@@ -241,7 +316,7 @@ app.use((err, req, res, next) => {
     return res.status(409).json({ erro: 'Já existe um aluno com esse e-mail.' });
   }
   console.error(err);
-  res.status(500).json({ erro: 'Erro interno no servidor.', detalhes: err.message });
+  res.status(500).json({ erro: 'Erro interno no servidor.' });
 });
 
 // Localmente sobe o servidor; na Vercel o app exportado é usado como função

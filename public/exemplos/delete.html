@@ -53,16 +53,24 @@
         const texto = document.createElement('span');
         texto.textContent = aluno.id + ' - ' + aluno.nome;
 
-        const botao = document.createElement('button');
-        botao.className = 'excluir';
-        botao.textContent = 'Excluir';
-        // Cada botão sabe qual aluno ele exclui
-        botao.addEventListener('click', function () {
-          excluir(aluno.id, aluno.nome);
-        });
-
         item.appendChild(texto);
-        item.appendChild(botao);
+
+        // Alunos de exemplo vêm com "protegido": true e a API não deixa excluir
+        if (aluno.protegido) {
+          const aviso = document.createElement('small');
+          aviso.textContent = 'protegido';
+          item.appendChild(aviso);
+        } else {
+          const botao = document.createElement('button');
+          botao.className = 'excluir';
+          botao.textContent = 'Excluir';
+          // Cada botão sabe qual aluno ele exclui
+          botao.addEventListener('click', function () {
+            excluir(aluno.id, aluno.nome);
+          });
+          item.appendChild(botao);
+        }
+
         lista.appendChild(item);
       });
 

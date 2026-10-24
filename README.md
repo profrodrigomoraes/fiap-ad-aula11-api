@@ -1,7 +1,7 @@
 # API de Alunos
 
 API didática para praticar `fetch()` com GET, POST, PUT, PATCH e DELETE.
-A página inicial (`/`) tem a documentação e um botão para testar cada rota.
+A documentação fica em `/docs` (a raiz `/` redireciona para lá) e tem e um botão para testar cada rota.
 
 | Método | Rota           | O que faz                              |
 | ------ | -------------- | -------------------------------------- |
@@ -18,6 +18,16 @@ Páginas de exemplo comentadas, uma por método, em [public/exemplos/](public/ex
 no início do `<script>`.
 
 A tabela `alunos` é criada sozinha na primeira requisição, já com 5 alunos de exemplo.
+
+## Segurança básica
+
+- Os 5 alunos iniciais são protegidos (): PUT/PATCH/DELETE neles responde 403.
+- Textos não aceitam  ou , para ninguém injetar HTML/JS nas páginas dos colegas.
+- No máximo  registros (padrão 500).
+- Cada IP pode fazer  escritas por minuto (padrão 60). Ajuste se a turma
+  inteira sair pelo mesmo IP da rede da faculdade.
+- Corpo JSON de no máximo 10 KB; erros 500 não expõem detalhes do banco.
+- SQL sempre parametrizado (sem SQL injection).
 
 ## Rodar localmente
 

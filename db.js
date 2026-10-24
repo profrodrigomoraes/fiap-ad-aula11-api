@@ -11,9 +11,12 @@ const ALUNOS_INICIAIS = [
   { nome: 'Elisa Martins', email: 'elisa.martins@email.com', curso: 'UX Design', idade: 21 },
 ];
 
+// Os alunos iniciais são "protegidos": ninguém consegue editar ou excluir
 async function inserirAlunosIniciais() {
   for (const a of ALUNOS_INICIAIS) {
-    await sql`INSERT INTO alunos (nome, email, curso, idade) VALUES (${a.nome}, ${a.email}, ${a.curso}, ${a.idade})`;
+    await sql`
+      INSERT INTO alunos (nome, email, curso, idade, protegido)
+      VALUES (${a.nome}, ${a.email}, ${a.curso}, ${a.idade}, true)`;
   }
 }
 
@@ -31,9 +34,14 @@ export function garantirTabela() {
         email         TEXT NOT NULL UNIQUE,
         curso         TEXT,
         idade         INTEGER,
+        protegido     BOOLEAN NOT NULL DEFAULT false,
         criado_em     TIMESTAMPTZ NOT NULL DEFAULT now(),
         atualizado_em TIMESTAMPTZ NOT NULL DEFAULT now()
       )`;
+    // Para tabelas criadas antes da coluna "protegido" existir
+    await sql`ALTER TABLE alunos ADD COLUMN IF NOT EXISTS protegido BOOLEAN NOT NULL DEFAULT false`;
+    await sql`UPDATE alunos SET protegido = true WHERE email = ANY(${ALUNOS_INICIAIS.map((a) => a.email)}) AND NOT protegido`;
+
     const [{ total }] = await sql`SELECT count(*)::int AS total FROM alunos`;
     if (total === 0) await inserirAlunosIniciais();
   })().catch((erro) => {

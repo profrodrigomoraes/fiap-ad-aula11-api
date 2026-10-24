@@ -59,10 +59,10 @@
   <h2>Páginas de exemplo</h2>
   <p>Uma página HTML para cada método, com o código comentado. Abra, teste e veja o código-fonte (Ctrl+U):</p>
   <ul>
-    <li><a href="exemplos/get.html">GET</a>: listar todos e buscar por id</li>
-    <li><a href="exemplos/post.html">POST</a>: formulário de cadastro</li>
-    <li><a href="exemplos/put.html">PUT</a>: carregar um aluno, editar e salvar</li>
-    <li><a href="exemplos/delete.html">DELETE</a>: lista com botão de excluir</li>
+    <li><a href="exemplos/get">GET</a>: listar todos e buscar por id</li>
+    <li><a href="exemplos/post">POST</a>: formulário de cadastro</li>
+    <li><a href="exemplos/put">PUT</a>: carregar um aluno, editar e salvar</li>
+    <li><a href="exemplos/delete">DELETE</a>: lista com botão de excluir</li>
   </ul>
 
   <h2>O recurso: aluno</h2>
@@ -70,10 +70,11 @@
   <table>
     <tr><th>Campo</th><th>Tipo</th><th>Obrigatório?</th><th>Observação</th></tr>
     <tr><td><code>id</code></td><td>número</td><td>—</td><td>Gerado pelo servidor. Você nunca envia.</td></tr>
-    <tr><td><code>nome</code></td><td>texto</td><td>sim</td><td>Até 100 caracteres</td></tr>
+    <tr><td><code>nome</code></td><td>texto</td><td>sim</td><td>Até 100 caracteres, sem <code>&lt;</code> ou <code>&gt;</code></td></tr>
     <tr><td><code>email</code></td><td>texto</td><td>sim</td><td>Precisa ser único</td></tr>
     <tr><td><code>curso</code></td><td>texto</td><td>não</td><td>Ex: "Front-end"</td></tr>
     <tr><td><code>idade</code></td><td>número</td><td>não</td><td>Inteiro, sem aspas: <code>20</code> e não <code>"20"</code></td></tr>
+    <tr><td><code>protegido</code></td><td>true/false</td><td>—</td><td>Os 5 alunos iniciais são exemplos protegidos: dá para ler, mas não editar nem excluir. Crie o seu com POST para praticar PUT e DELETE.</td></tr>
     <tr><td><code>criado_em</code> / <code>atualizado_em</code></td><td>data</td><td>—</td><td>Preenchidos pelo servidor</td></tr>
   </table>
   </div>
@@ -89,10 +90,11 @@
     <tr><td><code>200</code></td><td>OK</td><td>Deu certo (GET, PUT, PATCH, DELETE)</td></tr>
     <tr><td><code>201</code></td><td>Created</td><td>Aluno criado com POST</td></tr>
     <tr><td><code>400</code></td><td>Bad Request</td><td>JSON mal formatado, campo faltando ou inválido, id que não é número</td></tr>
-    <tr><td><code>403</code></td><td>Forbidden</td><td>Chave errada no <code>/reset</code></td></tr>
+    <tr><td><code>403</code></td><td>Forbidden</td><td>Tentou alterar ou excluir um aluno protegido, ou o limite de alunos foi atingido</td></tr>
     <tr><td><code>404</code></td><td>Not Found</td><td>Não existe aluno com esse id, ou a rota não existe</td></tr>
     <tr><td><code>405</code></td><td>Method Not Allowed</td><td>Método que a rota não aceita (ex: POST em <code>/alunos/1</code>)</td></tr>
     <tr><td><code>409</code></td><td>Conflict</td><td>Já existe um aluno com esse e-mail</td></tr>
+    <tr><td><code>429</code></td><td>Too Many Requests</td><td>Muitas alterações em pouco tempo. Espere um minuto.</td></tr>
     <tr><td><code>500</code></td><td>Internal Server Error</td><td>Erro no servidor (não é culpa sua!)</td></tr>
   </table>
   </div>
@@ -121,7 +123,7 @@
       descricao: 'Cria um aluno. Não envie o id: ele é gerado pelo servidor. Responde <code>201</code> com o aluno criado.',
     },
     {
-      metodo: 'PUT', caminho: '/alunos/{id}', corpo: { nome: 'Ana Souza', email: 'ana.souza@email.com', curso: 'Back-end', idade: 21 },
+      metodo: 'PUT', caminho: '/alunos/{id}', corpo: { nome: 'Fulano de Tal', email: 'fulano@email.com', curso: 'Back-end', idade: 21 },
       descricao: 'Substitui o aluno <strong>inteiro</strong>. <code>nome</code> e <code>email</code> são obrigatórios; campos não enviados ficam vazios (<code>null</code>).',
     },
     {

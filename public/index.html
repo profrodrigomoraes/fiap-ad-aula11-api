@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>API de Alunos</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --card: #fff; --text: #1d1d1f; --muted: #66666b; --border: #e2e2de;
+    --code-bg: #1e1e24; --code-text: #e8e8ec;
+    --get: #1a7f37; --post: #0969da; --put: #9a6700; --patch: #8250df; --delete: #cf222e;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 900px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { margin: 0 0 4px; font-size: 2rem; }
+  h2 { margin: 40px 0 12px; font-size: 1.3rem; }
+  p { margin: 8px 0; }
+  .muted { color: var(--muted); }
+  code { font-family: ui-monospace, Consolas, monospace; font-size: .9em; }
+  :not(pre) > code { background: #ebebe7; padding: 1px 6px; border-radius: 4px; }
+  pre { background: var(--code-bg); color: var(--code-text); padding: 14px 16px; border-radius: 8px; overflow-x: auto; margin: 10px 0; font-size: .88rem; }
+  table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: #f0f0ec; font-size: .85rem; }
+  tr:last-child td { border-bottom: 0; }
+  .tabela { overflow-x: auto; }
+  .base { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; margin-top: 16px; }
+  .base code { font-size: 1rem; word-break: break-all; }
+
+  .rota { background: var(--card); border: 1px solid var(--border); border-radius: 10px; margin: 14px 0; overflow: hidden; }
+  .rota > summary { list-style: none; cursor: pointer; display: flex; gap: 12px; align-items: center; padding: 12px 16px; flex-wrap: wrap; }
+  .rota > summary::-webkit-details-marker { display: none; }
+  .rota[open] > summary { border-bottom: 1px solid var(--border); }
+  .rota .corpo { padding: 4px 16px 16px; }
+  .metodo { font: 700 .8rem ui-monospace, Consolas, monospace; color: #fff; padding: 4px 8px; border-radius: 5px; min-width: 64px; text-align: center; }
+  .GET { background: var(--get); } .POST { background: var(--post); } .PUT { background: var(--put); }
+  .PATCH { background: var(--patch); } .DELETE { background: var(--delete); }
+  .caminho { font: 600 1rem ui-monospace, Consolas, monospace; }
+
+  .teste { border-top: 1px dashed var(--border); margin-top: 14px; padding-top: 12px; }
+  .teste label { display: block; font-size: .85rem; font-weight: 600; margin: 8px 0 4px; }
+  .teste input, .teste textarea { width: 100%; font: .9rem ui-monospace, Consolas, monospace; padding: 8px; border: 1px solid var(--border); border-radius: 6px; }
+  .teste textarea { min-height: 120px; resize: vertical; }
+  .teste input { max-width: 160px; }
+  button { margin-top: 10px; font: 600 .9rem system-ui, sans-serif; padding: 8px 16px; border: 0; border-radius: 6px; background: var(--text); color: #fff; cursor: pointer; }
+  button:hover { opacity: .85; }
+  .status { display: inline-block; font: 700 .85rem ui-monospace, monospace; padding: 2px 8px; border-radius: 4px; margin-top: 12px; }
+  .ok { background: #dafbe1; color: #116329; } .falha { background: #ffebe9; color: #a40e26; }
+</style>
+</head>
+<body>
+<main>
+  <h1>API de Alunos</h1>
+  <p class="muted">API de prática para aprender a usar <code>fetch()</code> com GET, POST, PUT, PATCH e DELETE.</p>
+
+  <div class="base"><strong>URL base:</strong> <code id="base"></code></div>
+
+  <h2>O recurso: aluno</h2>
+  <div class="tabela">
+  <table>
+    <tr><th>Campo</th><th>Tipo</th><th>Obrigatório?</th><th>Observação</th></tr>
+    <tr><td><code>id</code></td><td>número</td><td>—</td><td>Gerado pelo servidor. Você nunca envia.</td></tr>
+    <tr><td><code>nome</code></td><td>texto</td><td>sim</td><td>Até 100 caracteres</td></tr>
+    <tr><td><code>email</code></td><td>texto</td><td>sim</td><td>Precisa ser único</td></tr>
+    <tr><td><code>curso</code></td><td>texto</td><td>não</td><td>Ex: "Front-end"</td></tr>
+    <tr><td><code>idade</code></td><td>número</td><td>não</td><td>Inteiro, sem aspas: <code>20</code> e não <code>"20"</code></td></tr>
+    <tr><td><code>criado_em</code> / <code>atualizado_em</code></td><td>data</td><td>—</td><td>Preenchidos pelo servidor</td></tr>
+  </table>
+  </div>
+
+  <h2>Rotas</h2>
+  <p class="muted">Clique numa rota para ver o exemplo de código e testar direto daqui.</p>
+  <div id="rotas"></div>
+
+  <h2>Códigos de status</h2>
+  <div class="tabela">
+  <table>
+    <tr><th>Código</th><th>Significado</th><th>Quando acontece</th></tr>
+    <tr><td><code>200</code></td><td>OK</td><td>Deu certo (GET, PUT, PATCH, DELETE)</td></tr>
+    <tr><td><code>201</code></td><td>Created</td><td>Aluno criado com POST</td></tr>
+    <tr><td><code>400</code></td><td>Bad Request</td><td>JSON mal formatado, campo faltando ou inválido, id que não é número</td></tr>
+    <tr><td><code>403</code></td><td>Forbidden</td><td>Chave errada no <code>/reset</code></td></tr>
+    <tr><td><code>404</code></td><td>Not Found</td><td>Não existe aluno com esse id, ou a rota não existe</td></tr>
+    <tr><td><code>405</code></td><td>Method Not Allowed</td><td>Método que a rota não aceita (ex: POST em <code>/alunos/1</code>)</td></tr>
+    <tr><td><code>409</code></td><td>Conflict</td><td>Já existe um aluno com esse e-mail</td></tr>
+    <tr><td><code>500</code></td><td>Internal Server Error</td><td>Erro no servidor (não é culpa sua!)</td></tr>
+  </table>
+  </div>
+  <p>Todo erro responde um JSON com a chave <code>erro</code> explicando o problema (e às vezes <code>detalhes</code>):</p>
+  <pre>{ "erro": "Dados inválidos.", "detalhes": ["\"email\" é obrigatório e deve ser um e-mail válido, ex: \"ana@email.com\"."] }</pre>
+
+  <h2>Dica: tratando erros no fetch</h2>
+  <p><code>fetch()</code> <strong>não</strong> dá erro quando o status é 400 ou 404. Confira <code>resposta.ok</code>:</p>
+  <pre id="dica-erro"></pre>
+</main>
+
+<script>
+  const BASE = location.origin;
+  document.getElementById('base').textContent = BASE;
+
+  const novoAluno = { nome: 'Fulano de Tal', email: 'fulano@email.com', curso: 'Front-end', idade: 20 };
+
+  const ROTAS = [
+    {
+      metodo: 'GET', caminho: '/alunos', descricao: 'Lista todos os alunos. Responde um array.',
+      extra: 'Filtros opcionais na URL: <code>/alunos?curso=Front-end</code> e <code>/alunos?busca=ana</code> (procura no nome e e-mail).',
+    },
+    { metodo: 'GET', caminho: '/alunos/{id}', descricao: 'Busca um aluno pelo id. Responde um objeto.' },
+    {
+      metodo: 'POST', caminho: '/alunos', corpo: novoAluno,
+      descricao: 'Cria um aluno. Não envie o id: ele é gerado pelo servidor. Responde <code>201</code> com o aluno criado.',
+    },
+    {
+      metodo: 'PUT', caminho: '/alunos/{id}', corpo: { nome: 'Ana Souza', email: 'ana.souza@email.com', curso: 'Back-end', idade: 21 },
+      descricao: 'Substitui o aluno <strong>inteiro</strong>. <code>nome</code> e <code>email</code> são obrigatórios; campos não enviados ficam vazios (<code>null</code>).',
+    },
+    {
+      metodo: 'PATCH', caminho: '/alunos/{id}', corpo: { curso: 'Dados' },
+      descricao: 'Atualiza <strong>só os campos enviados</strong>. Os outros continuam como estavam.',
+    },
+    { metodo: 'DELETE', caminho: '/alunos/{id}', descricao: 'Remove o aluno. Responde uma mensagem e o aluno removido.' },
+  ];
+
+  function codigoExemplo(r, id = 1) {
+    const url = BASE + r.caminho.replace('{id}', id);
+    if (r.metodo === 'GET') {
+      return `fetch('${url}')
+  .then(resposta => resposta.json())
+  .then(dados => console.log(dados));`;
+    }
+    const linhas = [`  method: '${r.metodo}',`];
+    if (r.corpo) {
+      linhas.push(`  headers: { 'Content-Type': 'application/json' },`);
+      linhas.push(`  body: JSON.stringify(${JSON.stringify(r.corpo, null, 2).replace(/\n/g, '\n  ')})`);
+    }
+    return `fetch('${url}', {
+${linhas.join('\n')}
+})
+  .then(resposta => resposta.json())
+  .then(dados => console.log(dados));`;
+  }
+
+  function escapar(texto) {
+    return texto.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
+  }
+
+  const container = document.getElementById('rotas');
+  ROTAS.forEach((r) => {
+    const temId = r.caminho.includes('{id}');
+    const el = document.createElement('details');
+    el.className = 'rota';
+    el.innerHTML = `
+      <summary><span class="metodo ${r.metodo}">${r.metodo}</span><span class="caminho">${r.caminho}</span></summary>
+      <div class="corpo">
+        <p>${r.descricao}</p>
+        ${r.extra ? `<p>${r.extra}</p>` : ''}
+        <pre class="exemplo">${escapar(codigoExemplo(r))}</pre>
+        <div class="teste">
+          <strong>Testar</strong>
+          ${temId ? '<label>id</label><input class="id" type="number" min="1" value="1">' : ''}
+          ${r.corpo ? `<label>Corpo (JSON)</label><textarea class="json">${JSON.stringify(r.corpo, null, 2)}</textarea>` : ''}
+          <button type="button">Enviar ${r.metodo}</button>
+          <div class="resultado"></div>
+        </div>
+      </div>`;
+
+    const inputId = el.querySelector('.id');
+    if (inputId) {
+      inputId.addEventListener('input', () => {
+        el.querySelector('.exemplo').textContent = codigoExemplo(r, inputId.value || '{id}');
+      });
+    }
+
+    el.querySelector('button').addEventListener('click', async () => {
+      const resultado = el.querySelector('.resultado');
+      const caminho = r.caminho.replace('{id}', inputId ? inputId.value : '');
+      const opcoes = { method: r.metodo };
+      if (r.corpo) {
+        opcoes.headers = { 'Content-Type': 'application/json' };
+        opcoes.body = el.querySelector('.json').value;
+      }
+      resultado.innerHTML = '<p class="muted">Enviando...</p>';
+      try {
+        const resposta = await fetch(BASE + caminho, opcoes);
+        const dados = await resposta.json();
+        resultado.innerHTML = `
+          <span class="status ${resposta.ok ? 'ok' : 'falha'}">${resposta.status} ${resposta.statusText}</span>
+          <pre>${escapar(JSON.stringify(dados, null, 2))}</pre>`;
+      } catch (erro) {
+        resultado.innerHTML = `<span class="status falha">Falha</span><pre>${escapar(String(erro))}</pre>`;
+      }
+    });
+
+    container.appendChild(el);
+  });
+
+  document.getElementById('dica-erro').textContent = `async function buscarAluno(id) {
+  const resposta = await fetch('${BASE}/alunos/' + id);
+  const dados = await resposta.json();
+
+  if (!resposta.ok) {
+    alert('Erro ' + resposta.status + ': ' + dados.erro);
+    return;
+  }
+
+  console.log(dados.nome);
+}`;
+</script>
+</body>
+</html>

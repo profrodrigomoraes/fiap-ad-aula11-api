@@ -1,0 +1,37 @@
+# API de Alunos
+
+API didática para praticar `fetch()` com GET, POST, PUT, PATCH e DELETE.
+A página inicial (`/`) tem a documentação e um botão para testar cada rota.
+
+| Método | Rota           | O que faz                              |
+| ------ | -------------- | -------------------------------------- |
+| GET    | `/alunos`      | Lista todos (`?curso=` e `?busca=`)    |
+| GET    | `/alunos/{id}` | Busca um aluno                         |
+| POST   | `/alunos`      | Cria um aluno (id gerado pelo banco)   |
+| PUT    | `/alunos/{id}` | Substitui o aluno inteiro              |
+| PATCH  | `/alunos/{id}` | Atualiza só os campos enviados         |
+| DELETE | `/alunos/{id}` | Remove o aluno                         |
+| POST   | `/reset`       | Volta aos 5 alunos iniciais (header `x-reset-key`) |
+
+A tabela `alunos` é criada sozinha na primeira requisição, já com 5 alunos de exemplo.
+
+## Rodar localmente
+
+```bash
+npm install
+npm run dev        # http://localhost:3000
+```
+
+As variáveis ficam no `.env` (veja `.env.example`).
+
+## Deploy na Vercel
+
+1. Suba o projeto para o GitHub e importe na Vercel (ou rode `npx vercel`).
+2. Em **Settings → Environment Variables**, cadastre `DATABASE_URL` e `RESET_KEY`.
+3. Faça o deploy. Não precisa de `vercel.json`: a Vercel reconhece o Express sozinha.
+
+## Resetar a base depois da aula
+
+```bash
+curl -X POST https://SEU-PROJETO.vercel.app/reset -H "x-reset-key: SUA_CHAVE"
+```

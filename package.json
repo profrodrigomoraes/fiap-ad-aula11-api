@@ -1,0 +1,19 @@
+{
+  "name": "api-alunos",
+  "version": "1.0.0",
+  "description": "API didática para praticar GET, POST, PUT, PATCH e DELETE",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node --env-file-if-exists=.env --watch index.js",
+    "start": "node --env-file-if-exists=.env index.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.0.2",
+    "cors": "^2.8.5",
+    "express": "^5.1.0"
+  }
+}

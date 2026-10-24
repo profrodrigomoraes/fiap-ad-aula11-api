@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>POST - Cadastrar aluno</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 800px; margin: 0 auto; padding: 24px 16px; color: #222; }
+    nav a { margin-right: 12px; }
+    h1 span { background: #0969da; color: #fff; padding: 2px 10px; border-radius: 6px; font-size: .8em; }
+    section { border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin: 20px 0; }
+    label { display: block; margin-top: 10px; font-weight: 600; }
+    input, button { font-size: 1rem; padding: 6px 10px; }
+    input { width: 100%; max-width: 360px; box-sizing: border-box; }
+    button { cursor: pointer; margin-top: 16px; }
+    pre { background: #f4f4f4; padding: 12px; border-radius: 6px; overflow-x: auto; }
+    .erro { color: #cf222e; }
+    .sucesso { color: #1a7f37; }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="get.html">GET</a> <a href="post.html">POST</a> <a href="put.html">PUT</a> <a href="delete.html">DELETE</a>
+  </nav>
+
+  <h1><span>POST</span> Cadastrar aluno</h1>
+  <p>O método <strong>POST</strong> serve para <strong>criar</strong> um registro novo.
+     Os dados vão no <strong>corpo (body)</strong> da requisição, em formato JSON.
+     Repare que <strong>não enviamos o id</strong>: o servidor gera.</p>
+
+  <section>
+    <form id="formulario">
+      <label for="nome">Nome *</label>
+      <input id="nome" required>
+
+      <label for="email">E-mail *</label>
+      <input id="email" type="email" required>
+
+      <label for="curso">Curso</label>
+      <input id="curso" placeholder="Ex: Front-end">
+
+      <label for="idade">Idade</label>
+      <input id="idade" type="number" min="0">
+
+      <button type="submit">Cadastrar</button>
+    </form>
+
+    <p id="mensagem"></p>
+    <pre id="resposta" hidden></pre>
+  </section>
+
+  <script>
+    // Endereço da API
+    const API_URL = 'https://fiap-ad-aula11-api.vercel.app';
+
+    async function cadastrar(evento) {
+      // Impede o formulário de recarregar a página (comportamento padrão do submit)
+      evento.preventDefault();
+
+      const mensagem = document.getElementById('mensagem');
+      const resposta = document.getElementById('resposta');
+
+      // 1) Monta o objeto com os dados do formulário
+      const idade = document.getElementById('idade').value;
+      const aluno = {
+        nome: document.getElementById('nome').value,
+        email: document.getElementById('email').value,
+        curso: document.getElementById('curso').value || null,
+        // O valor do input é texto ("20"). A API espera número (20), então convertemos.
+        idade: idade ? Number(idade) : null
+      };
+
+      // 2) Envia com fetch. Para POST precisamos informar:
+      //    method  -> qual método HTTP
+      //    headers -> avisa o servidor que o corpo está em JSON
+      //    body    -> os dados, convertidos de objeto para texto JSON
+      const res = await fetch(API_URL + '/alunos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(aluno)
+      });
+
+      const dados = await res.json();
+
+      // 3) Confere se deu certo. Sucesso no POST = status 201 (Created)
+      if (!res.ok) {
+        mensagem.className = 'erro';
+        // Em erros de validação a API manda a lista de problemas em "detalhes"
+        mensagem.textContent = 'Erro ' + res.status + ': ' + dados.erro + ' ' + (dados.detalhes ?? []).join(' ');
+        resposta.hidden = true;
+        return;
+      }
+
+      mensagem.className = 'sucesso';
+      mensagem.textContent = 'Aluno cadastrado com o id ' + dados.id + '! (status ' + res.status + ')';
+
+      // Mostra o que o servidor devolveu: o aluno criado, já com id e datas
+      resposta.textContent = JSON.stringify(dados, null, 2);
+      resposta.hidden = false;
+
+      document.getElementById('formulario').reset();
+    }
+
+    document.getElementById('formulario').addEventListener('submit', cadastrar);
+  </script>
+</body>
+</html>

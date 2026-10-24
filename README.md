@@ -13,6 +13,10 @@ A página inicial (`/`) tem a documentação e um botão para testar cada rota.
 | DELETE | `/alunos/{id}` | Remove o aluno                         |
 | POST   | `/reset`       | Volta aos 5 alunos iniciais (header `x-reset-key`) |
 
+Páginas de exemplo comentadas, uma por método, em [public/exemplos/](public/exemplos/)
+(`get.html`, `post.html`, `put.html`, `delete.html`). Elas usam a constante `API_URL`
+no início do `<script>`.
+
 A tabela `alunos` é criada sozinha na primeira requisição, já com 5 alunos de exemplo.
 
 ## Rodar localmente

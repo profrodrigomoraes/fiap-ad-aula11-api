@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PUT - Editar aluno</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 800px; margin: 0 auto; padding: 24px 16px; color: #222; }
+    nav a { margin-right: 12px; }
+    h1 span { background: #9a6700; color: #fff; padding: 2px 10px; border-radius: 6px; font-size: .8em; }
+    section { border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin: 20px 0; }
+    label { display: block; margin-top: 10px; font-weight: 600; }
+    input, button { font-size: 1rem; padding: 6px 10px; }
+    #formulario input { width: 100%; max-width: 360px; box-sizing: border-box; }
+    button { cursor: pointer; }
+    #formulario button { margin-top: 16px; }
+    .erro { color: #cf222e; }
+    .sucesso { color: #1a7f37; }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="get.html">GET</a> <a href="post.html">POST</a> <a href="put.html">PUT</a> <a href="delete.html">DELETE</a>
+  </nav>
+
+  <h1><span>PUT</span> Editar aluno</h1>
+  <p>O método <strong>PUT</strong> serve para <strong>substituir</strong> um registro que já existe.
+     O id vai na <strong>URL</strong> e os dados novos vão no <strong>corpo</strong>, como no POST.</p>
+  <p>O fluxo comum numa tela de edição é:
+     <strong>1)</strong> buscar o aluno com GET e preencher o formulário,
+     <strong>2)</strong> o usuário altera,
+     <strong>3)</strong> enviar tudo de volta com PUT.</p>
+
+  <section>
+    <h2>1. Escolha o aluno</h2>
+    <input id="inputId" type="number" min="1" value="1">
+    <button id="btnCarregar">Carregar</button>
+  </section>
+
+  <section>
+    <h2>2. Altere os dados</h2>
+    <form id="formulario">
+      <label for="nome">Nome *</label>
+      <input id="nome" required>
+
+      <label for="email">E-mail *</label>
+      <input id="email" type="email" required>
+
+      <label for="curso">Curso</label>
+      <input id="curso">
+
+      <label for="idade">Idade</label>
+      <input id="idade" type="number" min="0">
+
+      <button type="submit">3. Salvar alterações</button>
+    </form>
+    <p id="mensagem"></p>
+  </section>
+
+  <script>
+    // Endereço da API
+    const API_URL = 'https://fiap-ad-aula11-api.vercel.app';
+
+    const mensagem = document.getElementById('mensagem');
+
+    function mostrarErro(status, dados) {
+      mensagem.className = 'erro';
+      mensagem.textContent = 'Erro ' + status + ': ' + dados.erro + ' ' + (dados.detalhes ?? []).join(' ');
+    }
+
+    // ------------------------------------------------------------
+    // Passo 1: GET para buscar o aluno e preencher o formulário
+    // ------------------------------------------------------------
+    async function carregar() {
+      const id = document.getElementById('inputId').value;
+
+      const res = await fetch(API_URL + '/alunos/' + id);
+      const aluno = await res.json();
+
+      if (!res.ok) {
+        document.getElementById('formulario').reset();
+        mostrarErro(res.status, aluno);
+        return;
+      }
+
+      // Coloca os dados atuais nos campos (null vira campo vazio)
+      document.getElementById('nome').value = aluno.nome;
+      document.getElementById('email').value = aluno.email;
+      document.getElementById('curso').value = aluno.curso ?? '';
+      document.getElementById('idade').value = aluno.idade ?? '';
+
+      mensagem.className = '';
+      mensagem.textContent = 'Aluno ' + aluno.id + ' carregado. Altere e clique em salvar.';
+    }
+
+    // ------------------------------------------------------------
+    // Passo 3: PUT para salvar
+    // ------------------------------------------------------------
+    async function salvar(evento) {
+      evento.preventDefault();
+
+      const id = document.getElementById('inputId').value;
+      const idade = document.getElementById('idade').value;
+
+      // No PUT enviamos o aluno COMPLETO.
+      // Campo que não for enviado fica vazio (null) no banco!
+      const aluno = {
+        nome: document.getElementById('nome').value,
+        email: document.getElementById('email').value,
+        curso: document.getElementById('curso').value || null,
+        idade: idade ? Number(idade) : null
+      };
+
+      // Igual ao POST, mas com method 'PUT' e o id na URL
+      const res = await fetch(API_URL + '/alunos/' + id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(aluno)
+      });
+
+      const dados = await res.json();
+
+      if (!res.ok) {
+        mostrarErro(res.status, dados);
+        return;
+      }
+
+      // A API devolve o aluno já atualizado
+      mensagem.className = 'sucesso';
+      mensagem.textContent = 'Aluno ' + dados.id + ' atualizado! Agora: ' + dados.nome + ', ' + (dados.curso ?? 'sem curso') + '.';
+    }
+
+    document.getElementById('btnCarregar').addEventListener('click', carregar);
+    document.getElementById('formulario').addEventListener('submit', salvar);
+  </script>
+</body>
+</html>

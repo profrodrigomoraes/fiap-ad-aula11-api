@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DELETE - Excluir aluno</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 800px; margin: 0 auto; padding: 24px 16px; color: #222; }
+    nav a { margin-right: 12px; }
+    h1 span { background: #cf222e; color: #fff; padding: 2px 10px; border-radius: 6px; font-size: .8em; }
+    section { border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin: 20px 0; }
+    button { font-size: 1rem; padding: 6px 10px; cursor: pointer; }
+    ul { list-style: none; padding: 0; }
+    li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid #ddd; }
+    .excluir { background: #cf222e; color: #fff; border: 0; border-radius: 4px; }
+    .erro { color: #cf222e; }
+    .sucesso { color: #1a7f37; }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="get.html">GET</a> <a href="post.html">POST</a> <a href="put.html">PUT</a> <a href="delete.html">DELETE</a>
+  </nav>
+
+  <h1><span>DELETE</span> Excluir aluno</h1>
+  <p>O método <strong>DELETE</strong> serve para <strong>remover</strong> um registro.
+     Só precisamos do id na <strong>URL</strong>, sem corpo.</p>
+
+  <section>
+    <p id="mensagem"></p>
+    <ul id="lista"></ul>
+  </section>
+
+  <script>
+    // Endereço da API
+    const API_URL = 'https://fiap-ad-aula11-api.vercel.app';
+
+    const mensagem = document.getElementById('mensagem');
+
+    // ------------------------------------------------------------
+    // GET para montar a lista, com um botão "Excluir" em cada aluno
+    // ------------------------------------------------------------
+    async function carregarLista() {
+      const res = await fetch(API_URL + '/alunos');
+      const alunos = await res.json();
+
+      const lista = document.getElementById('lista');
+      lista.innerHTML = '';
+
+      alunos.forEach(function (aluno) {
+        const item = document.createElement('li');
+
+        const texto = document.createElement('span');
+        texto.textContent = aluno.id + ' - ' + aluno.nome;
+
+        const botao = document.createElement('button');
+        botao.className = 'excluir';
+        botao.textContent = 'Excluir';
+        // Cada botão sabe qual aluno ele exclui
+        botao.addEventListener('click', function () {
+          excluir(aluno.id, aluno.nome);
+        });
+
+        item.appendChild(texto);
+        item.appendChild(botao);
+        lista.appendChild(item);
+      });
+
+      if (alunos.length === 0) {
+        mensagem.textContent = 'Nenhum aluno cadastrado.';
+      }
+    }
+
+    // ------------------------------------------------------------
+    // DELETE /alunos/{id}
+    // ------------------------------------------------------------
+    async function excluir(id, nome) {
+      // Excluir não tem volta: sempre peça confirmação ao usuário
+      if (!confirm('Excluir o aluno ' + nome + '?')) return;
+
+      // Só o method e o id na URL. Não precisa de headers nem body.
+      const res = await fetch(API_URL + '/alunos/' + id, {
+        method: 'DELETE'
+      });
+
+      const dados = await res.json();
+
+      if (!res.ok) {
+        // Ex: 404 se outra pessoa já excluiu esse aluno
+        mensagem.className = 'erro';
+        mensagem.textContent = 'Erro ' + res.status + ': ' + dados.erro;
+      } else {
+        mensagem.className = 'sucesso';
+        mensagem.textContent = dados.mensagem;
+      }
+
+      // Recarrega a lista para refletir o que está no servidor agora
+      carregarLista();
+    }
+
+    // Carrega a lista assim que a página abre
+    carregarLista();
+  </script>
+</body>
+</html>
